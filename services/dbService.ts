@@ -2,7 +2,6 @@
 import { User, UserRole, Review, Sentiment, Notification, NotificationType, Booking } from '../types';
 import { doc, setDoc, collection, Timestamp, getDoc, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from './firebase';
-import { analyzeReviewSentiment } from './geminiService';
 
 // Mock Data Initialization
 const INITIAL_USERS: User[] = [
@@ -56,14 +55,11 @@ class MockMySQLService {
 
   // --- USER MANAGEMENT ---
 
-  // 1. Get User Profile (Handles Cross-Device Login)
   async getUserProfile(uid: string): Promise<User | null> {
-    // A. Try Local Storage first (fastest)
     const users: User[] = JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || '[]');
     const localUser = users.find(u => u.id === uid);
     if (localUser) return localUser;
 
-    // B. Try Firestore (Cross-device fallback)
     try {
         console.log("Fetching user profile from Firestore:", uid);
         const docRef = doc(db, "users", uid);
@@ -78,10 +74,9 @@ class MockMySQLService {
                 role: (data.role as UserRole) || UserRole.USER,
                 frequentRoutes: data.frequentRoutes || [],
                 readNotificationIds: [],
-                password: '' // Auth handled by Firebase, password field mostly for legacy mock
+                password: '' 
             };
             
-            // Hydrate local storage for session speed
             users.push(firestoreUser);
             localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
             
@@ -108,7 +103,6 @@ class MockMySQLService {
   async createUser(username: string, email: string, password: string, uid?: string): Promise<User> {
     await this.delay(400);
     
-    // 1. Write to Firestore
     if (uid) {
         try {
             await setDoc(doc(db, "users", uid), {
@@ -127,7 +121,6 @@ class MockMySQLService {
         }
     }
 
-    // 2. Write to Local Mock DB
     const users: User[] = JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || '[]');
     const existingIndex = users.findIndex(u => u.email === email);
     
@@ -257,13 +250,12 @@ class MockMySQLService {
   async addReview(review: Review): Promise<void> {
     await this.delay(100);
     
-    // 1. Firestore Sync (Primary for Persistence)
+    // 1. Firestore Sync
     try {
-        console.log("Attempting to write review to Firestore:", review.id);
+        console.log("Writing review to Firestore with embedded sentiment:", review.sentiment);
         
-        // Strategy: Embed sentiment into the review string using a delimiter
-        // Format: "Review text content...|||POSITIVE|||0.95"
-        // This strictly complies with rules allowing ONLY 'username', 'review', 'time'
+        // Strict Compliance: Only username, review, time allowed.
+        // We embed sentiment and score in the review text to adhere to rules while storing data.
         const sentimentPayload = `|||${review.sentiment}|||${review.sentimentScore}`;
         
         const strictPayload = {
@@ -280,28 +272,28 @@ class MockMySQLService {
         }
     }
 
-    // 2. Local Storage (Immediate feedback)
+    // 2. Local Storage
     const reviews = JSON.parse(localStorage.getItem(MOCK_REVIEWS_KEY) || '[]');
     reviews.unshift(review); 
     localStorage.setItem(MOCK_REVIEWS_KEY, JSON.stringify(reviews));
   }
 
   async getReviews(): Promise<Review[]> {
-    // 1. Try Fetching from Firestore (Persistent Source)
+    // 1. Try Fetching from Firestore
     try {
         const q = query(collection(db, "communityReviews"), orderBy("time", "desc"));
         const querySnapshot = await getDocs(q);
         
-        // Use Promise.all to map asynchronously because we might need to call Gemini for legacy data
-        const reviewsPromises = querySnapshot.docs.map(async (doc) => {
+        const firestoreReviews = querySnapshot.docs.map(doc => {
             const data = doc.data();
             const date = data.time?.toDate ? data.time.toDate().toISOString() : new Date().toISOString();
             
-            let textContent = data.review;
+            let textContent = data.review || "";
             let sentiment = Sentiment.NEUTRAL;
             let score = 0.5;
 
-            // Check for metadata delimiter (New Format)
+            // Extract embedded metadata
+            // Format: "Review Text|||Positive|||0.9"
             if (textContent && textContent.includes('|||')) {
                 const parts = textContent.split('|||');
                 if (parts.length >= 3) {
@@ -311,30 +303,8 @@ class MockMySQLService {
                     if (!isNaN(parsedScore)) score = parsedScore;
                     if (parsedSentiment) sentiment = parsedSentiment as Sentiment;
                     
+                    // Rejoin the text in case the user typed '|||' themselves in the review body
                     textContent = parts.join('|||');
-                }
-            } else if (textContent) {
-                // Legacy Format (Raw Text) - Analyze on the fly
-                // Check local cache first to save API calls and time
-                const cacheKey = `sentiment_cache_${doc.id}`;
-                const cached = localStorage.getItem(cacheKey);
-                
-                if (cached) {
-                    const parsed = JSON.parse(cached);
-                    sentiment = parsed.sentiment;
-                    score = parsed.score;
-                } else {
-                    // Fetch from Gemini
-                    try {
-                        console.log(`Analyzing legacy review ${doc.id} on the fly...`);
-                        const analysis = await analyzeReviewSentiment(textContent);
-                        sentiment = analysis.sentiment;
-                        score = analysis.score;
-                        // Cache it indefinitely for this device
-                        localStorage.setItem(cacheKey, JSON.stringify({ sentiment, score }));
-                    } catch (err) {
-                        console.warn("Failed to analyze legacy review:", err);
-                    }
                 }
             }
 
@@ -349,7 +319,6 @@ class MockMySQLService {
             };
         });
         
-        const firestoreReviews = await Promise.all(reviewsPromises);
         if (firestoreReviews.length > 0) return firestoreReviews;
 
     } catch (e) {

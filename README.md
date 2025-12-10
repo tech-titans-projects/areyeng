@@ -1,71 +1,20 @@
-# 🚌 Areyeng Bus Tracker
- 
-A modern web application that helps commuters in Tshwane track **Areyeng bus routes in real time**.  
-Built with scalability, clean design, and user-friendly authentication in mind.
- 
----
- 
-## ✨ Features
-- **Authentication**: Secure sign-in and registration system (email + password).
-- **Bus Tracking**: Real-time updates on Areyeng bus locations and routes.
-- **Modern UI**: Minimalist, pastel-inspired interface for a clean commuter experience.
-- **Fast Deployment**: Hosted on [Vercel](https://vercel.com/) for speed and reliability.
-- **AI-powered predictions**: Smarter route and timing estimates (future enhancement).
- 
----
- 
-## 🛠️ Tech Stack
-| Layer        | Technology |
-|--------------|------------|
-| Frontend     | React / Next.js |
-| Backend      | Node.js / Express |
-| Database     | Firebase / SQL (planned integration) |
-| Hosting      | Vercel |
-| Versioning   | Git + GitHub |
- 
----
- 
-## 📂 Project Structure
-```
-areyeng-bus-tracker/  
- ├── public/              # Static assets  
- ├── src/  
- │   ├── components/      # Reusable UI components  
- │   │    └── Navbar.js  
- │   ├── pages/           # Next.js pages  
- │   │    ├── index.js    # Landing page (login/register)  
- │   │    ├── login.js  
- │   │    ├── register.js   
- │   │    └── dashboard.js  
- │   ├── services/        # API + Firebase integration  
- │   │    └── auth.js
- │   └── styles/          # CSS modules  
- │        └── globals.css  
- ├── .gitignore  
- ├── package.json  
- ├── README.md  
- └── next.config.js  
-```
- ---
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-## 🚀 Setup Instructions  
-1. Clone the Repository  
-`git clone https://github.com/your-username/areyeng-bus-tracker.gitcd areyeng-bus-tracker`
+# Run and deploy your AI Studio app
 
-3. Install Dependencies  
-`npm install`
+This contains everything you need to run your app locally.
 
-5. Configure Firebase  
-Create a .env.local file in the root:   
-`NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key  
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com  
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id`
+View your app in AI Studio: https://ai.studio/apps/drive/1N8G_rAYpcMzgd93XIPauPqKsu0JfRf8P
 
-7. Run Locally  
-`npm run dev`   
- App will be available at http://localhost:3000.  
+## Run Locally
 
-9. Deploy to Vercel 
-- Push to GitHub (git push origin main)  
-- Connect repo to Vercel  
-- Automatic deployment will go live at https://areyeng.vercel.app  
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
