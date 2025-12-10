@@ -1,0 +1,8 @@
+{
+  "name": "Areyeng AI Tracker",
+  "description": "Comprehensive bus tracking with AI-powered schedule prediction, sentiment analysis, and intelligent chatbot support.",
+  "requestFramePermissions": [
+    "geolocation",
+    "microphone"
+  ]
+}
